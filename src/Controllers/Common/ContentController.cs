@@ -11,6 +11,7 @@ using sodoff.Configuration;
 using System;
 using System.Globalization;
 using System.IO;
+using Org.BouncyCastle.Math.EC;
 
 namespace sodoff.Controllers.Common;
 public class ContentController : Controller {
@@ -26,6 +27,7 @@ public class ContentController : Controller {
     private DisplayNamesService displayNamesService;
     private BuddyService buddyService;
     private NeighborhoodService neighborhoodService;
+    private MMOCommunicationService mpCommunication;
     private Random random = new Random();
     private readonly IOptions<ApiServerConfig> config;
     
@@ -41,7 +43,8 @@ public class ContentController : Controller {
         DisplayNamesService displayNamesService,
         BuddyService buddyService,
         NeighborhoodService neighborhoodService,
-        IOptions<ApiServerConfig> config
+        IOptions<ApiServerConfig> config,
+        MMOCommunicationService mMOCommunicationService
     ) {
         this.ctx = ctx;
         this.keyValueService = keyValueService;
@@ -55,6 +58,7 @@ public class ContentController : Controller {
         this.buddyService = buddyService;
         this.neighborhoodService = neighborhoodService;
         this.config = config;
+        this.mpCommunication = mMOCommunicationService;
     }
 
     [HttpPost]
@@ -1122,7 +1126,6 @@ public class ContentController : Controller {
     [Route("ContentWebService.asmx/GetBuddyList")]
     [VikingSession]
     public IActionResult GetBuddyList(Viking viking, [FromForm] string apiKey) {
-        if (ClientVersion.SS <= ClientVersion.GetVersion(apiKey)) return NotFound(); // disable social features in SuperSecret
         return Ok(buddyService.GetBuddyList(viking));
     }
 
@@ -1130,13 +1133,14 @@ public class ContentController : Controller {
     [Produces("application/xml")]
     [Route("ContentWebService.asmx/AddBuddy")]
     [VikingSession]
-    public IActionResult AddBuddy(Viking viking, [FromForm] Guid buddyUserID, [FromForm] string apiKey) {
-        if (ClientVersion.SS <= ClientVersion.GetVersion(apiKey)) return NotFound(); // disable social features in SuperSecret
-
+    public IActionResult AddBuddy(Viking viking, [FromForm] Guid buddyUserID, [FromForm] string apiKey, [FromForm] string apiToken) {
         Viking? receivingViking = ctx.Vikings.FirstOrDefault(e => e.Uid == buddyUserID);
 
         if (receivingViking != null)
-            return Ok(buddyService.AddBuddy(viking, receivingViking, ClientVersion.GetVersion(apiKey)));
+        {
+            mpCommunication.SendPacketToPlayer(apiToken, receivingViking.Uid.ToString(), "SBE", new string[] { "SBE", "-1", viking.Uid.ToString(), receivingViking.Uid.ToString(), "1", viking.CurrentRoomName ?? "NoZone" });
+            return Ok(buddyService.AddBuddy(viking, receivingViking, apiToken, ClientVersion.GetVersion(apiKey)));
+        }
         else 
             return Ok(new BuddyActionResult { Result = BuddyActionResultType.InvalidFriendCode });
     }
@@ -1145,14 +1149,15 @@ public class ContentController : Controller {
     [Produces("application/xml")]
     [Route("ContentWebService.asmx/AddBuddyByFriendCode")]
     [VikingSession]
-    public IActionResult AddBuddyByFriendCode(Viking viking, [FromForm] string friendCode, [FromForm] string apiKey)
+    public IActionResult AddBuddyByFriendCode(Viking viking, [FromForm] string friendCode, [FromForm] string apiKey, [FromForm] string apiToken)
     {
-        if (ClientVersion.SS <= ClientVersion.GetVersion(apiKey)) return NotFound(); // disable social features in SuperSecret
-
         Viking? receivingViking = ctx.Vikings.FirstOrDefault(e => e.BuddyCode == friendCode);
 
         if (receivingViking != null)
-            return Ok(buddyService.AddBuddy(viking, receivingViking, ClientVersion.GetVersion(apiKey)));
+        {
+            mpCommunication.SendPacketToPlayer(apiToken, receivingViking.Uid.ToString(), "SBE", new string[] { "SBE", "-1", viking.Uid.ToString(), receivingViking.Uid.ToString(), "1", viking.CurrentRoomName ?? "NoZone" });
+            return Ok(buddyService.AddBuddy(viking, receivingViking, apiToken, ClientVersion.GetVersion(apiKey)));
+        }
         else
             return Ok(new BuddyActionResult { Result = BuddyActionResultType.InvalidFriendCode });
     }
@@ -1161,14 +1166,13 @@ public class ContentController : Controller {
     [Produces("application/xml")]
     [Route("ContentWebService.asmx/ApproveBuddy")]
     [VikingSession]
-    public IActionResult ApproveBuddy(Viking viking, [FromForm] Guid buddyUserID, [FromForm] string apiKey)
+    public IActionResult ApproveBuddy(Viking viking, [FromForm] Guid buddyUserID, [FromForm] string apiKey, [FromForm] string apiToken)
     {
-        if (ClientVersion.SS <= ClientVersion.GetVersion(apiKey)) return NotFound(); // disable social features in SuperSecret
-
         Viking buddyViking = ctx.Vikings.FirstOrDefault(e => e.Uid == buddyUserID);
 
         if (buddyViking != null)
         {
+            mpCommunication.SendPacketToPlayer(apiToken, buddyViking.Uid.ToString(), "SBE", new string[] { "SBE", "-1", viking.Uid.ToString(), buddyViking.Uid.ToString(), "4", viking.CurrentRoomName ?? "NoZone" });
             return Ok(buddyService.AcceptBuddyRequest(viking, buddyViking));
         }
         else return Ok(new BuddyActionResult { Result = BuddyActionResultType.Unknown });
@@ -1178,15 +1182,29 @@ public class ContentController : Controller {
     [Produces("application/xml")]
     [Route("ContentWebService.asmx/RemoveBuddy")]
     [VikingSession]
-    public IActionResult RemoveBuddy(Viking viking, [FromForm] Guid buddyUserId, [FromForm] string apiKey)
+    public IActionResult RemoveBuddy(Viking viking, [FromForm] Guid buddyUserId, [FromForm] string apiKey, [FromForm] string apiToken)
     {
-        if (ClientVersion.SS <= ClientVersion.GetVersion(apiKey)) return NotFound(); // disable social features in SuperSecret
-
         Viking receivingViking = ctx.Vikings.FirstOrDefault(e => e.Uid == buddyUserId);
 
         if (receivingViking != null)
         {
+            mpCommunication.SendPacketToPlayer(apiToken, receivingViking.Uid.ToString(), "SBE", new string[] { "SBE", "-1", viking.Uid.ToString(), receivingViking.Uid.ToString(), "2", viking.CurrentRoomName ?? "NoZone" });
             return Ok(buddyService.RemoveBuddy(viking, receivingViking));
+        }
+        else return Ok(false);
+    }
+
+    [HttpPost]
+    [Produces("application/xml")]
+    [Route("ContentWebService.asmx/BlockBuddy")]
+    [VikingSession]
+    public IActionResult BlockBuddy(Viking viking, [FromForm] Guid buddyUserId, [FromForm] string apiToken)
+    {
+        Viking receivingViking = ctx.Vikings.FirstOrDefault(e => e.Uid == buddyUserId);
+        if (receivingViking != null)
+        {
+            mpCommunication.SendPacketToPlayer(apiToken, receivingViking.Uid.ToString(), "SBE", new string[] { "SBE", "-1", viking.Uid.ToString(), receivingViking.Uid.ToString(), "3", viking.CurrentRoomName ?? "NoZone" });
+            return Ok(buddyService.IgnoreBuddy(viking, receivingViking));
         }
         else return Ok(false);
     }
@@ -1197,8 +1215,6 @@ public class ContentController : Controller {
     [VikingSession]
     public IActionResult UpdateBestBuddy(Viking viking, [FromForm] Guid buddyUserID, [FromForm] bool bestBuddy, [FromForm] string apiKey)
     {
-        if (ClientVersion.SS <= ClientVersion.GetVersion(apiKey)) return NotFound(); // disable social features in SuperSecret
-
         Viking receivingViking = ctx.Vikings.FirstOrDefault(e => e.Uid == buddyUserID);
 
         if (receivingViking != null)
@@ -1224,10 +1240,19 @@ public class ContentController : Controller {
 
     [HttpPost]
     [Produces("application/xml")]
+    [Route("ContentWebService.asmx/InviteBuddy")]
+    [VikingSession]
+    public IActionResult InviteBuddy(Viking viking, [FromForm] Guid buddyUserID, [FromForm] string apiToken)
+    {
+        // send invite mmo packet to user
+        mpCommunication.SendPacketToPlayer(apiToken, buddyUserID.ToString(), "SBE", new string[] { "SBE", "-1", viking.Uid.ToString(), buddyUserID.ToString(), "5", viking.CurrentRoomName ?? "NoRoom" });
+        return Ok(true);
+    }
+
+    [HttpPost]
+    [Produces("application/xml")]
     [Route("ContentWebService.asmx/GetFriendCode")]
     public IActionResult GetFriendCode([FromForm] Guid userId, [FromForm] string apiKey) {
-        if (ClientVersion.SS <= ClientVersion.GetVersion(apiKey)) return NotFound(); // disable social features in SuperSecret
-
         Viking? viking = ctx.Vikings.FirstOrDefault(e => e.Uid == userId);
 
         if (viking == null) return Ok("?????");
@@ -1765,13 +1790,15 @@ public class ContentController : Controller {
     [Produces("application/xml")]
     [Route("ContentWebService.asmx/SetScene")] // used by World of Jumpstart
     [VikingSession]
-    public IActionResult SetScene(Viking viking, [FromForm] string sceneName, [FromForm] string contentXml) {
+    public IActionResult SetScene(Viking viking, [FromForm] string sceneName, [FromForm] string contentXml, [FromForm] string apiToken) {
         SceneData? existingScene = viking.SceneData.FirstOrDefault(e => e.SceneName == sceneName);
 
         if(existingScene is not null)
         {
             existingScene.XmlData = contentXml;
             ctx.SaveChanges();
+            // update scene for other players
+            mpCommunication.SendPacketToRoom(apiToken, sceneName + "_" + viking.Uid.ToString(), "SNE", new string[] { "SNE", "-1", contentXml, "8" });
             return Ok(true);
         }
         else
@@ -1791,13 +1818,15 @@ public class ContentController : Controller {
     [Produces("application/xml")]
     [Route("ContentWebService.asmx/SetHouse")] // used by World Of Jumpstart
     [VikingSession]
-    public IActionResult SetHouse(Viking viking, [FromForm] string contentXml) {
+    public IActionResult SetHouse(Viking viking, [FromForm] string contentXml, [FromForm] string apiToken) {
         Util.SavedData.Set(
             viking,
             Util.SavedData.House(),
             contentXml
         );
         ctx.SaveChanges();
+        // update house for other users in room
+        mpCommunication.SendPacketToRoom(apiToken, "MyNeighborhood_" + viking.Uid.ToString(), "SNE", new string[] { "SNE", "-1", viking.Uid.ToString(), "10" }); // hard coding neighborhood, might be used for other things tho, will account for when found
         return Ok(true);
     }
 
@@ -1805,8 +1834,8 @@ public class ContentController : Controller {
     [Produces("application/xml")]
     [Route("ContentWebService.asmx/SetNeighbor")] // used by World Of Jumpstart
     [VikingSession(UseLock = true)]
-    public IActionResult SetNeighbor(Viking viking, [FromForm] string neighboruserid, [FromForm] int slot) {
-        return Ok(neighborhoodService.SaveNeighbors(viking, neighboruserid, slot));
+    public IActionResult SetNeighbor(Viking viking, [FromForm] string neighboruserid, [FromForm] int slot, [FromForm] string apiToken) {
+        return Ok(neighborhoodService.SaveNeighbors(viking, neighboruserid, slot, apiToken));
     }
 
     [HttpPost]

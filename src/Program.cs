@@ -41,6 +41,7 @@ builder.Services.AddScoped<ProfileService>();
 builder.Services.AddScoped<BuddyService>();
 builder.Services.AddScoped<MessageService>();
 builder.Services.AddScoped<NeighborhoodService>();
+builder.Services.AddScoped<MMOCommunicationService>();
 
 bool assetServer = builder.Configuration.GetSection("AssetServer").GetValue<bool>("Enabled");
 string assetIP = builder.Configuration.GetSection("AssetServer").GetValue<string>("ListenIP");

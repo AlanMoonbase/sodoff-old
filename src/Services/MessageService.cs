@@ -8,9 +8,11 @@ namespace sodoff.Services
     public class MessageService
     {
         private readonly DBContext ctx;
-        public MessageService(DBContext ctx)
+        private readonly MMOCommunicationService mpCommunication;
+        public MessageService(DBContext ctx, MMOCommunicationService mpCommunication)
         {
             this.ctx = ctx;
+            this.mpCommunication = mpCommunication;
         }
 
         public CombinedListMessage[] GetCombinedMessageArray(Viking viking)
@@ -243,7 +245,7 @@ namespace sodoff.Services
             return newMsg;
         }
 
-        public Model.Message PostDataMessage(Viking viking, Viking toViking, string data, MessageType type, MessageLevel level, MessageTypeID messageTypeID, string memberMessage = "", string nonMemberMessage = "")
+        public Model.Message PostDataMessage(Viking viking, Viking toViking, string apiToken, string data, MessageType type, MessageLevel level, MessageTypeID messageTypeID, string memberMessage = "", string nonMemberMessage = "")
         {
             Random rnd = new Random(); // for generating conversationid and queueid
 
@@ -267,6 +269,38 @@ namespace sodoff.Services
             // add it to other vikings messages
             toViking.Messages.Add(newMsg);
             ctx.SaveChanges();
+
+            // send SPMN update packet to viking
+            mpCommunication.SendPacketToPlayer(apiToken, toViking.Uid.ToString(), "SPMN", new string[] { "SPMN" });
+
+            return newMsg;
+        }
+
+        public Model.Message PostBuddyRequest(Viking viking, Viking toViking, string apiToken)
+        {
+            Random rnd = new Random();
+
+            // create a new message
+            Model.Message newMsg = new Model.Message
+            {
+                VikingId = toViking.Id,
+                FromVikingId = viking.Id,
+                ConversationID = rnd.Next(1000, 9999),
+                QueueID = rnd.Next(1000, 9999),
+                CreatedAt = DateTime.UtcNow,
+                MessageType = MessageType.Post,
+                MessageLevel = MessageLevel.WhiteList,
+                MemberMessage = "[[Line1]]=[[{{BuddyUserName}} wants to be added to your buddy list. Is that okay?]]",
+                NonMemberMessage = "[[Line1]]=[[{{BuddyUserName}} wants to be added to your buddy list. Is that okay?]]",
+                MessageTypeID = MessageTypeID.BuddyList,
+                IsNew = true
+            };
+
+            // add it to other vikings messages
+            toViking.Messages.Add(newMsg);
+            ctx.SaveChanges();
+
+            // buddy request updates are handled by SBE packet, do not send SPMN here
 
             return newMsg;
         }

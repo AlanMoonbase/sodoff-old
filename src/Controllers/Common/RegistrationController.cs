@@ -178,12 +178,12 @@ public class RegistrationController : Controller {
         }
 
         // post message notifying user of coins
-        if (gameVersion == ClientVersion.WoJS) {
-            messageService.PostDataMessage(v, v, "", MessageType.Data, MessageLevel.WhiteList, MessageTypeID.Achievement, 
-                "[[Line1]]=[[Welcome To ReStarted! Here's 300 Coins To Get You Started. Remember To Also Play The Missions To Earn JumpStars!]][[SubType]]=[[Coin]]",
-                "[[Line1]]=[[Welcome To ReStarted! Here's 300 Coins To Get You Started. Remember To Also Play The Missions To Earn JumpStars!]][[SubType]]=[[Coin]]"
-            );
-        }
+        //if (gameVersion == ClientVersion.WoJS) {
+        //    messageService.PostDataMessage(v, v, "", MessageType.Data, MessageLevel.WhiteList, MessageTypeID.Achievement, 
+        //        "[[Line1]]=[[Welcome To ReStarted! Here's 300 Coins To Get You Started. Remember To Also Play The Missions To Earn JumpStars!]][[SubType]]=[[Coin]]",
+        //        "[[Line1]]=[[Welcome To ReStarted! Here's 300 Coins To Get You Started. Remember To Also Play The Missions To Earn JumpStars!]][[SubType]]=[[Coin]]"
+        //    );
+        //}
 
         roomService.CreateRoom(v, "MyRoomINT");
 

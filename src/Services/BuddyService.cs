@@ -44,7 +44,7 @@ namespace sodoff.Services
             return new BuddyList { Buddy = buddies.ToArray() };
         }
 
-        public BuddyActionResult AddBuddy(Viking owner, Viking receiver, uint gameVersion)
+        public BuddyActionResult AddBuddy(Viking owner, Viking receiver, string apiToken, uint gameVersion)
         {
             // create two relations
             Model.Buddy relation = new Model.Buddy { OwnerID = owner.Id, BuddyID = receiver.Id, Status = BuddyStatus.PendingApprovalFromOther };
@@ -61,11 +61,9 @@ namespace sodoff.Services
             ctx.Buddies.Add(relation2);
             ctx.SaveChanges();
 
-            // post message for adding buddy
+            // post buddy request
 
-            messageService.PostDataMessage(owner, receiver, null, MessageType.Post, MessageLevel.WhiteList, MessageTypeID.BuddyList,
-                "[[Line1]]=[[{{BuddyUserName}} wants to be added to your buddy list. Is that okay?]]",
-                "[[Line1]]=[[{{BuddyUserName}} wants to be added to your buddy list. Is that okay?]]");
+            messageService.PostBuddyRequest(owner, receiver, apiToken);
 
             return new BuddyActionResult
             {
@@ -78,41 +76,95 @@ namespace sodoff.Services
         public bool RemoveBuddy(Viking owner, Viking receiver)
         {
             // get buddy relation 1
-            Model.Buddy relation = ctx.Buddies.Where(e => e.OwnerID == owner.Id)
+            Model.Buddy? relation = ctx.Buddies.Where(e => e.OwnerID == owner.Id)
                 .FirstOrDefault(e => e.BuddyID == receiver.Id);
 
             // remove it
-            ctx.Buddies.Remove(relation);
+            if (relation == null) return false;
+            else if (relation.Status == BuddyStatus.BlockedByBoth) relation.Status = BuddyStatus.BlockedByOther;
+            else ctx.Buddies.Remove(relation);
 
             // get buddy relation 2
 
-            Model.Buddy relation2 = ctx.Buddies.Where(e => e.OwnerID == receiver.Id)
+            Model.Buddy? relation2 = ctx.Buddies.Where(e => e.OwnerID == receiver.Id)
                 .FirstOrDefault(e => e.BuddyID == owner.Id);
 
             // remove it
-            ctx.Buddies.Remove(relation2);
+            if (relation2 == null) return false;
+            else if (relation2.Status == BuddyStatus.BlockedByBoth) relation2.Status = BuddyStatus.BlockedBySelf;
+            else ctx.Buddies.Remove(relation2);
 
             ctx.SaveChanges();
 
             return true;
         }
 
+        public bool IgnoreBuddy(Viking owner, Viking receiver)
+        {
+            Model.Buddy? existingRelation1 = ctx.Buddies.Where(e => e.OwnerID == owner.Id)
+                .FirstOrDefault(e => e.BuddyID == receiver.Id);
+            Model.Buddy? existingRelation2 = ctx.Buddies.Where(e => e.OwnerID == receiver.Id)
+                .FirstOrDefault(e => e.BuddyID == owner.Id);
+
+            // check if relation exists and if relation1 has relation2 blocked and if relation2 has relation1 blocked
+            if (existingRelation1 != null && existingRelation2 != null && existingRelation1.Status == BuddyStatus.BlockedBySelf && existingRelation2.Status == BuddyStatus.BlockedByOther)
+            {
+                // set both status' to blocked by both
+                existingRelation1.Status = BuddyStatus.BlockedByBoth;
+                existingRelation2.Status = BuddyStatus.BlockedByBoth;
+
+                ctx.SaveChanges();
+                return true;
+            }
+
+            // check if relation exists and if relation2 has relation1 blocked and if relation1 has relation2 blocked
+            if(existingRelation1 != null && existingRelation2 != null && existingRelation1.Status == BuddyStatus.BlockedByOther && existingRelation2.Status == BuddyStatus.BlockedBySelf)
+            {
+                // set both status' to blocked by both
+                existingRelation1.Status = BuddyStatus.BlockedByBoth;
+                existingRelation2.Status = BuddyStatus.BlockedByBoth;
+
+                ctx.SaveChanges();
+                return true;
+            }
+
+            if (existingRelation1 != null) existingRelation1.Status = BuddyStatus.BlockedBySelf;
+            else
+            {
+                // create relation for block
+                Model.Buddy relation = new Model.Buddy { OwnerID = owner.Id, BuddyID = receiver.Id, Status = BuddyStatus.BlockedBySelf };
+                ctx.Buddies.Add(relation);
+            }
+
+            if (existingRelation2 != null) existingRelation2.Status = BuddyStatus.BlockedByOther;
+            else
+            {
+                Model.Buddy relation = new Model.Buddy { OwnerID = receiver.Id, BuddyID = owner.Id, Status = BuddyStatus.BlockedByOther };
+                ctx.Buddies.Add(relation);
+            }
+
+            ctx.SaveChanges();
+            return true;
+        }
+
         public bool AcceptBuddyRequest(Viking owner, Viking receiver)
         {
             // get buddy relation 1
-            Model.Buddy relation = ctx.Buddies.Where(e => e.OwnerID == owner.Id)
+            Model.Buddy? relation = ctx.Buddies.Where(e => e.OwnerID == owner.Id)
                 .FirstOrDefault(e => e.BuddyID == receiver.Id);
 
             // change status to approved
-            relation.Status = BuddyStatus.Approved;
+            if (relation != null) relation.Status = BuddyStatus.Approved;
+            else return false;
 
             // get buddy relation 2
 
-            Model.Buddy relation2 = ctx.Buddies.Where(e => e.OwnerID == receiver.Id)
+            Model.Buddy? relation2 = ctx.Buddies.Where(e => e.OwnerID == receiver.Id)
                 .FirstOrDefault(e => e.BuddyID == owner.Id);
 
             // change status to approved
-            relation2.Status = BuddyStatus.Approved;
+            if (relation2 != null) relation2.Status = BuddyStatus.Approved;
+            else return false;
 
             ctx.SaveChanges();
 
@@ -121,7 +173,7 @@ namespace sodoff.Services
 
         public bool SetBuddyAsBest(Viking viking, Viking vikingToSet, bool best)
         {
-            Model.Buddy buddyToSet = ctx.Buddies.Where(e => e.OwnerID == viking.Id)
+            Model.Buddy? buddyToSet = ctx.Buddies.Where(e => e.OwnerID == viking.Id)
                 .FirstOrDefault(e => e.BuddyID == vikingToSet.Id);
 
             if (buddyToSet == null) return false;
@@ -142,8 +194,9 @@ namespace sodoff.Services
                 Server = config.Value.MMOAdress,
                 ServerPort = config.Value.MMOPort,
                 ServerVersion = "S2X", // always use SmartFox 2X Protocol
-                Zone = viking.CurrentRoomName ?? "RoomNotSet", // TODO - put this in config
-                Room = viking.CurrentRoomId.ToString() ?? "0",
+                Zone = viking.CurrentRoomName ?? "ZoneNotSet",
+                Room = viking.CurrentRoomId.ToString() ?? "RoomNotSet",
+                MultiplayerID = 0, // not sure what this is, most likely for minigames
                 UserID = viking.Uid.ToString()
             };
             else return new BuddyLocation();
