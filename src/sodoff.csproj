@@ -13,7 +13,6 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Proxies" Version="7.0.7" />
-    <PackageReference Include="RestSharp" Version="111.3.0" />
   </ItemGroup>
   <Choose>
     <When Condition="$(DefineConstants.Contains('USE_SQLITE'))">
