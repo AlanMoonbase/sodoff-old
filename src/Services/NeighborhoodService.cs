@@ -29,13 +29,13 @@ namespace sodoff.Services
         {
             Neighborhood newNeighborhood = new Neighborhood
             {
-                VikingId = viking.Id,
-                Slot0 = this.slot0,
-                Slot1 = this.slot1,
-                Slot2 = this.slot2,
-                Slot3 = this.slot3,
-                Slot4 = this.slot4
-            };
+                    VikingId = viking.Id,
+                    Slot0 = this.slot0,
+                    Slot1 = this.slot1,
+                    Slot2 = this.slot2,
+                    Slot3 = this.slot3,
+                    Slot4 = this.slot4
+                };
             viking.Neighborhood = newNeighborhood;
             ctx.SaveChanges();
             return newNeighborhood;

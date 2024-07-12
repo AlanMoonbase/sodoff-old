@@ -25,6 +25,8 @@ public class DBContext : DbContext {
     public DbSet<Party> Parties { get; set; } = null!;
     public DbSet<Buddy> Buddies { get; set; } = null!;
     public DbSet<Message> Messages { get; set; } = null!;
+    public DbSet<Neighborhood> Neighborhoods { get; set; } = null!;
+    // we had a brief debate on whether it's neighborhoods or neighborheed
 
     public DbSet<Neighborhood> Neighborhoods { get; set; } = null!;
     // we had a brief debate on whether it's neighborhoods or neighborheed
