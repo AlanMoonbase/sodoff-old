@@ -639,7 +639,7 @@ public class ContentController : Controller {
             return Ok(false);
         }
 
-        if (petData.Texture.StartsWith("RS_SHARED/Larva.unity3d/LarvaTex") && petData.GrowthState.GrowthStateID>4) {
+        if (petData.Texture != null && petData.Texture.StartsWith("RS_SHARED/Larva.unity3d/LarvaTex") && petData.GrowthState.GrowthStateID>4) {
             petData.Texture = "RS_SHARED/" + petData.PetTypeID switch {
                  5 => "EyeClops.unity3d/EyeClopsBrainRedTex",           // EyeClops
                  6 => "RodeoLizard.unity3d/BlueLizardTex",              // RodeoLizard
@@ -783,7 +783,14 @@ public class ContentController : Controller {
     [Produces("application/xml")]
     [Route("ContentWebService.asmx/GetUnselectedPetByTypes")] // used by old SoD (e.g. 1.13)
     [VikingSession(UseLock=false)]
-    public RaisedPetData[]? GetUnselectedPetByTypes(Viking viking, [FromForm] string petTypeIDs, [FromForm] bool active) {
+    public RaisedPetData[]? GetUnselectedPetByTypes(Viking viking, [FromForm] string? userId, [FromForm] string petTypeIDs, [FromForm] bool active) {
+        // Get viking based on userId, or use request player's viking as a fallback.
+        if (userId != null) {
+            Guid userIdGuid = new Guid(userId);
+            Viking? ownerViking = ctx.Vikings.FirstOrDefault(e => e.Uid == userIdGuid);
+            if (ownerViking != null) viking = ownerViking;
+        }
+        
         RaisedPetData[] dragons = viking.Dragons
             .Where(d => d.RaisedPetData is not null)
             .Select(d => GetRaisedPetDataFromDragon(d, viking.SelectedDragonId))
@@ -796,7 +803,10 @@ public class ContentController : Controller {
         List<RaisedPetData> filteredDragons = new List<RaisedPetData>();
         int[] petTypeIDsInt = Array.ConvertAll(petTypeIDs.Split(','), s => int.Parse(s));
         foreach (RaisedPetData dragon in dragons) {
-            if (petTypeIDsInt.Contains(dragon.PetTypeID)) {
+            if (petTypeIDsInt.Contains(dragon.PetTypeID) && 
+                // Don't send the selected dragon.
+                viking.SelectedDragonId != dragon.RaisedPetID
+            ) {
                 filteredDragons.Add(dragon);
             }
         }
@@ -815,7 +825,7 @@ public class ContentController : Controller {
     public RaisedPetData[] GetActiveRaisedPet(Viking viking, [FromForm] string userId, [FromForm] int petTypeID) {
         if (petTypeID == 2) {
             // player can have multiple Minisaurs at the same time ... Minisaurs should never have been selected also ... so use GetUnselectedPetByTypes in this case
-            return GetUnselectedPetByTypes(viking, "2", false);
+            return GetUnselectedPetByTypes(viking, userId, "2", false);
         }
 
         Dragon? dragon = viking.SelectedDragon;
