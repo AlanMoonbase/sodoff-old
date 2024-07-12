@@ -51,5 +51,6 @@ public class Viking {
     public bool? Online {  get; set; }
     public int? CurrentRoomId {  get; set; }
     public string? CurrentRoomName { get; set; }
+    public bool IsCurrentRoomPrivate { get; set; }
     public uint? GameVersion { get; set; }
 }

@@ -1,7 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore.Metadata;
 using sodoff.Model;
 using sodoff.Schema;
 using sodoff.Services;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace sodoff.Controllers.Common
 {
@@ -10,11 +13,13 @@ namespace sodoff.Controllers.Common
         private readonly DBContext ctx;
         private readonly BuddyService buddyService;
         private readonly MessageService messageService;
-        public MMOController(DBContext ctx, BuddyService buddyService, MessageService messageService)
+        private readonly MMOCommunicationService mpCommunication;
+        public MMOController(DBContext ctx, BuddyService buddyService, MessageService messageService, MMOCommunicationService mMOCommunicationService)
         {
             this.ctx = ctx;
             this.buddyService = buddyService;
             this.messageService = messageService;
+            this.mpCommunication = mMOCommunicationService;
         }
 
         [HttpPost]
@@ -39,7 +44,7 @@ namespace sodoff.Controllers.Common
         [HttpPost]
         [Produces("application/xml")]
         [Route("MMO/SetBuddyLocation")]
-        public IActionResult SetBuddyLocation([FromForm] Guid token, [FromForm] string roomId, [FromForm] string roomName)
+        public IActionResult SetBuddyLocation([FromForm] Guid token, [FromForm] string roomId, [FromForm] string roomName, [FromForm] string isPrivate)
         {
             Session session = ctx.Sessions.FirstOrDefault(e => e.ApiToken == token);
             Viking vikingToSet = null;
@@ -51,6 +56,9 @@ namespace sodoff.Controllers.Common
                 if (!string.IsNullOrEmpty(roomId)) vikingToSet.CurrentRoomId = int.Parse(roomId);
                 else vikingToSet.CurrentRoomId = 0;
                 vikingToSet.CurrentRoomName = roomName;
+
+                vikingToSet.IsCurrentRoomPrivate = bool.Parse(isPrivate);
+
                 ctx.SaveChanges();
                 return Ok(true);
             } else return Ok(false);
@@ -68,8 +76,19 @@ namespace sodoff.Controllers.Common
             if (session != null) viking = session.Viking;
             if (viking != null && receivingViking != null)
             {
-                if (replyMsgId == 0) messageService.PostTextMessage(viking, receivingViking, content, MessageType.Post, (MessageLevel)level);
-                else messageService.ReplyToMessage(replyMsgId, viking, receivingViking, content, MessageType.Post, (MessageLevel)level);
+                if (replyMsgId == 0)
+                {
+                    messageService.PostTextMessage(viking, receivingViking, content, MessageType.Post, (MessageLevel)level);
+                    string newMessageCount = receivingViking.Messages.Where(e => e.IsNew == true && e.FromVikingId != receivingViking.Id && DateTime.UtcNow < e.CreatedAt.AddSeconds(10)).Count().ToString();
+                    mpCommunication.SendPacketToPlayer(token.ToString(), receivingViking.Uid.ToString(), "NMP", new string[] { "NMP", "-1", "0", newMessageCount, "null" });
+
+                }
+                else 
+                { 
+                    messageService.ReplyToMessage(replyMsgId, viking, receivingViking, content, MessageType.Post, (MessageLevel)level);
+                    string newMessageCount = receivingViking.Messages.Where(e => e.IsNew == true && e.FromVikingId != receivingViking.Id && DateTime.UtcNow < e.CreatedAt.AddSeconds(10)).Count().ToString();
+                    mpCommunication.SendPacketToPlayer(token.ToString(), receivingViking.Uid.ToString(), "NMP", new string[] { "NMP", "-1", "0", newMessageCount, "null" });
+                }
                 return Ok(true);
             }
 

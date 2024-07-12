@@ -1231,11 +1231,11 @@ public class ContentController : Controller {
     {
         Viking viking = ctx.Vikings.FirstOrDefault(e => e.Uid == buddyUserID);
 
-        if (viking != null)
+        if (viking != null && !viking.IsCurrentRoomPrivate)
         {
             return Ok(buddyService.GetBuddyLocation(viking, ClientVersion.GetVersion(apiKey)));
         }
-        else return Ok(new BuddyLocation());
+        else return Unauthorized(); // sending blank buddy location softlocks client
     }
 
     [HttpPost]
@@ -1245,8 +1245,15 @@ public class ContentController : Controller {
     public IActionResult InviteBuddy(Viking viking, [FromForm] Guid buddyUserID, [FromForm] string apiToken)
     {
         // send invite mmo packet to user
-        mpCommunication.SendPacketToPlayer(apiToken, buddyUserID.ToString(), "SBE", new string[] { "SBE", "-1", viking.Uid.ToString(), buddyUserID.ToString(), "5", viking.CurrentRoomName ?? "NoRoom" });
-        return Ok(true);
+        if(viking.IsCurrentRoomPrivate)
+        {
+            mpCommunication.SendPacketToPlayer(apiToken, buddyUserID.ToString(), "SPI", new string[] { "SPI", "-1", viking.Uid.ToString(), buddyUserID.ToString(), "14", viking.CurrentRoomName ?? "NoRoom" });
+            return Ok(true);
+        } else
+        {
+            mpCommunication.SendPacketToPlayer(apiToken, buddyUserID.ToString(), "SBE", new string[] { "SBE", "-1", viking.Uid.ToString(), buddyUserID.ToString(), "5", viking.CurrentRoomName ?? "NoRoom" });
+            return Ok(true);
+        }
     }
 
     [HttpPost]

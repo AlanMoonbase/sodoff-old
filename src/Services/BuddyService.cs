@@ -189,14 +189,14 @@ namespace sodoff.Services
             Model.Buddy? buddy = ctx.Buddies.FirstOrDefault(e => e.BuddyID == viking.Id);
             var location = new BuddyLocation();
 
-            if (viking.CurrentRoomId != null && buddy != null) location = new BuddyLocation
+            if (viking.CurrentRoomId != null && buddy != null && viking.CurrentRoomName != null) location = new BuddyLocation
             {
                 Server = config.Value.MMOAdress,
                 ServerPort = config.Value.MMOPort,
                 ServerVersion = "S2X", // always use SmartFox 2X Protocol
                 Zone = viking.CurrentRoomName ?? "ZoneNotSet",
                 Room = viking.CurrentRoomId.ToString() ?? "RoomNotSet",
-                MultiplayerID = 0, // not sure what this is, most likely for minigames
+                MultiplayerID = viking.CurrentRoomId ?? 0, // not sure what this is, most likely for minigames, putting room id for now
                 UserID = viking.Uid.ToString()
             };
             else return new BuddyLocation();
@@ -223,6 +223,11 @@ namespace sodoff.Services
                         location.AppName = "MBMain";
                         break;
                     }
+                case ClientVersion.SS:
+                    {
+                        location.AppName = "SSMain";
+                        break;
+                    }
             }
 
             return location;
@@ -232,7 +237,11 @@ namespace sodoff.Services
         {
             Random rnd = new Random();
 
-            if (!string.IsNullOrEmpty(codeOverride) && ctx.Vikings.FirstOrDefault(e => e.BuddyCode == codeOverride) == null) viking.BuddyCode = codeOverride;
+            if (!string.IsNullOrEmpty(codeOverride) && ctx.Vikings.FirstOrDefault(e => e.BuddyCode == codeOverride) == null)
+            {
+                viking.BuddyCode = codeOverride;
+                return viking.BuddyCode;
+            }
 
             if (viking.BuddyCode == null)
             {

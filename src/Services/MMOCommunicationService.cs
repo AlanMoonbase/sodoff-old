@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Options;
-using RestSharp;
 using sodoff.Configuration;
 using sodoff.Model;
 using System.Text;
@@ -31,7 +30,7 @@ namespace sodoff.Services
                 { "serializedArgs", serializedArgs }
             });
 
-            var result = httpClient.PostAsync($"http://{config.Value.MMOAdress}:9935/mmo/update/SendPacketToRoom", form)?.Result;
+            var result = httpClient.PostAsync($"http://{config.Value.MMOAdress}:{config.Value.MMOHttpApiPort}/mmo/update/SendPacketToRoom", form)?.Result;
             if (result != null && result.StatusCode == System.Net.HttpStatusCode.OK) return true;
             else return false;
         }
@@ -48,12 +47,12 @@ namespace sodoff.Services
                 { "serializedArgs", argsSerialized }
             });
 
-            var result = httpClient.PostAsync($"http://{config.Value.MMOAdress}:9935/mmo/update/SendPacketToPlayer", form)?.Result;
+            var result = httpClient.PostAsync($"http://{config.Value.MMOAdress}:{config.Value.MMOHttpApiPort}/mmo/update/SendPacketToPlayer", form)?.Result;
             if (result != null && result.StatusCode == System.Net.HttpStatusCode.OK) return true;
             else return false;
         }
 
-        public bool UpdateRoomVarsInRoom(string apiToken, string roomName, Dictionary<string, string> vars)
+        public bool UpdateRoomVarsInRoom<T>(string apiToken, string roomName, Dictionary<string, T> vars)
         {
             var varsSerialized = JsonSerializer.Serialize(vars);
 
@@ -64,7 +63,7 @@ namespace sodoff.Services
                 { "serializedVars", varsSerialized }
             });
 
-            var result = httpClient.PostAsync($"http://{config.Value.MMOAdress}:9935/mmo/update/UpdateRoomVarsInRoom", form)?.Result;
+            var result = httpClient.PostAsync($"http://{config.Value.MMOAdress}:{config.Value.MMOHttpApiPort}/mmo/update/UpdateRoomVarsInRoom", form)?.Result;
             if (result != null && result.StatusCode == System.Net.HttpStatusCode.OK) return true;
             else return false;
         }

@@ -9,10 +9,12 @@ namespace sodoff.Controllers.Common;
 public class MessagingController : Controller {
     private readonly DBContext ctx;
     private readonly MessageService messageService;
-    public MessagingController(MessageService messageService, DBContext ctx)
+    private readonly MMOCommunicationService mpCommunication;
+    public MessagingController(MessageService messageService, DBContext ctx, MMOCommunicationService mpCommunication)
     {
         this.messageService = messageService;
         this.ctx = ctx;
+        this.mpCommunication = mpCommunication;
     }
 
     [HttpPost]
@@ -57,6 +59,7 @@ public class MessagingController : Controller {
         {
             Model.Message msg = messageService.PostDataMessage(viking, toViking, apiToken, data, MessageType.Data, MessageLevel.WhiteList, typeId, "[[Line1]]=[[{{BuddyUserName}} has sent you a " + typeText + "]]",
                 "[[Line1]]=[[{{BuddyUserName}} has sent you a " + typeText + "]]"); // hardcoding level for now
+            mpCommunication.SendPacketToPlayer(apiToken, toUser.ToString(), "NMP", new string[] { "NMP", "-1", "0", toViking.Messages.Where(e => e.IsNew == true ).Count().ToString(), "null" });
             if (msg != null) return Ok(true);
             else return Ok(false);
         }
