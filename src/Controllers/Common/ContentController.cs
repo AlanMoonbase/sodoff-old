@@ -1860,6 +1860,21 @@ public class ContentController : Controller {
 
     [HttpPost]
     [Produces("application/xml")]
+    [Route("ContentWebService.asmx/SetNeighbor")] // used by World Of Jumpstart
+    [VikingSession(UseLock = true)]
+    public IActionResult SetNeighbor(Viking viking, [FromForm] string neighboruserid, [FromForm] int slot) {
+        return Ok(neighborhoodService.SaveNeighbors(viking, neighboruserid, slot));
+    }
+
+    [HttpPost]
+    [Produces("application/xml")]
+    [Route("ContentWebService.asmx/GetNeighborsByUserID")] // used by World Of Jumpstart
+    public IActionResult GetNeighborsByUserID([FromForm] string userId) {
+        return Ok(neighborhoodService.GetNeighbors(userId));
+    }
+
+    [HttpPost]
+    [Produces("application/xml")]
     [Route("V2/ContentWebService.asmx/GetGameData")]
     [VikingSession]
     public IActionResult GetGameData(Viking viking, [FromForm] string gameDataRequest) {

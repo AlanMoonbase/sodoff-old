@@ -167,6 +167,11 @@
 	<EmbeddedResource Include="Resources\wojs_adventureland_data\missions\4.xml">
 		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	</EmbeddedResource>
-
+	<EmbeddedResource Include="Resources\defaulthouse.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+>>>>>>>>> Temporary merge branch 2
   </ItemGroup>
 </Project>
