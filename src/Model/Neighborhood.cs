@@ -29,7 +29,5 @@ namespace sodoff.Model
 
         [Required]
         public Guid Slot4 { get; set; }
-
-        public virtual Viking? Viking { get; set; } = null!;
     }
 }

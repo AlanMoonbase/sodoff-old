@@ -1862,8 +1862,8 @@ public class ContentController : Controller {
     [Produces("application/xml")]
     [Route("ContentWebService.asmx/SetNeighbor")] // used by World Of Jumpstart
     [VikingSession(UseLock = true)]
-    public IActionResult SetNeighbor(Viking viking, [FromForm] string neighboruserid, [FromForm] int slot) {
-        return Ok(neighborhoodService.SaveNeighbors(viking, neighboruserid, slot));
+    public IActionResult SetNeighbor(Viking viking, [FromForm] string neighboruserid, [FromForm] int slot, [FromForm] string apiToken) {
+        return Ok(neighborhoodService.SaveNeighbors(viking, neighboruserid, slot, apiToken));
     }
 
     [HttpPost]
