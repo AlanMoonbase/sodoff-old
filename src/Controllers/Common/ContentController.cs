@@ -28,6 +28,7 @@ public class ContentController : Controller {
     private BuddyService buddyService;
     private NeighborhoodService neighborhoodService;
     private MMOCommunicationService mpCommunication;
+    private UserActivityService userActivityService;
     private Random random = new Random();
     private readonly IOptions<ApiServerConfig> config;
     
@@ -44,7 +45,8 @@ public class ContentController : Controller {
         BuddyService buddyService,
         NeighborhoodService neighborhoodService,
         IOptions<ApiServerConfig> config,
-        MMOCommunicationService mMOCommunicationService
+        MMOCommunicationService mMOCommunicationService,
+        UserActivityService activityService
     ) {
         this.ctx = ctx;
         this.keyValueService = keyValueService;
@@ -59,6 +61,7 @@ public class ContentController : Controller {
         this.neighborhoodService = neighborhoodService;
         this.config = config;
         this.mpCommunication = mMOCommunicationService;
+        this.userActivityService = activityService;
     }
 
     [HttpPost]
@@ -1718,9 +1721,30 @@ public class ContentController : Controller {
     [HttpPost]
     [Produces("application/xml")]
     [Route("ContentWebService.asmx/GetUserActivityByUserID")]
-    public IActionResult GetUserActivityByUserID() {
+    public IActionResult GetUserActivityByUserID([FromForm] Guid userId) {
         // TODO: This is a placeholder
-        return Ok(new ArrayOfUserActivity { UserActivity = new UserActivity[0] });
+
+        Viking? viking = ctx.Vikings.FirstOrDefault(e => e.Uid == userId);
+
+        if (viking == null) return Ok(new ArrayOfUserActivity { UserActivity = new Schema.UserActivity[0] });
+
+        return Ok(new ArrayOfUserActivity { UserActivity = userActivityService.GetUserActivities(viking) });
+    }
+
+    [HttpPost]
+    [Produces("application/xml")]
+    [Route("ContentWebService.asmx/SetUserActivity")]
+    public IActionResult SetUserActivity([FromForm] string inputXml)
+    {
+        Schema.UserActivity userActivity = XmlUtil.DeserializeXml<Schema.UserActivity>(inputXml);
+
+        if (userActivity != null)
+        {
+            userActivityService.SetOrAddUserActivity(userActivity);
+            return Ok(true);
+        }
+
+        return Ok(false);
     }
 
     [HttpPost]
