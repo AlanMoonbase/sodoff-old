@@ -11,7 +11,7 @@ namespace sodoff.Services
             this.ctx = ctx;
         }
 
-        public Schema.UserActivity[] GetUserActivities(Viking viking)
+        public List<Schema.UserActivity> GetUserActivities(Viking viking)
         {
             List<Model.UserActivity> userActivities = ctx.UserActivities.Where(e => e.VikingId == viking.Id).ToList();
             List<Schema.UserActivity> response = new List<Schema.UserActivity>();
@@ -28,15 +28,15 @@ namespace sodoff.Services
                 });
             }
 
-            return response.ToArray();
+            return response;
         }
 
-        public Model.UserActivity SetOrAddUserActivity(Schema.UserActivity deserializedUserActivity)
+        public Model.UserActivity AddUserActivity(Schema.UserActivity deserializedUserActivity)
         {
             Viking? viking = ctx.Vikings.FirstOrDefault(e => e.Uid == deserializedUserActivity.UserID);
             Viking? relatedViking = ctx.Vikings.FirstOrDefault(e => e.Uid == deserializedUserActivity.RelatedUserID);
 
-            if (viking != null && relatedViking != null && deserializedUserActivity.UserActivityTypeID == 3) // i do not know how to handle the other types, game seems to be treating all type id's the same
+            if (viking != null && relatedViking != null) // i do not know how to handle the other types, game seems to be treating all type id's the same
             {
                 Model.UserActivity userActivity = new Model.UserActivity
                 {
@@ -45,18 +45,7 @@ namespace sodoff.Services
                     RelatedVikingUid = relatedViking.Uid
                 };
 
-                Model.UserActivity? existingActivity = viking.UserActivities.FirstOrDefault(e => e.RelatedVikingUid == relatedViking.Uid);
-                if (existingActivity != null)
-                {
-                    // update it
-                    existingActivity.LastActivityAt = DateTime.UtcNow;
-                    existingActivity.RelatedVikingUid = relatedViking.Uid;
-                    existingActivity.VikingActivityTypeId = deserializedUserActivity.UserActivityTypeID ?? 0;
-                } else
-                {
-                    // add it
-                    viking.UserActivities.Add(userActivity);
-                }
+                viking.UserActivities.Add(userActivity);
                 ctx.SaveChanges();
                 return userActivity;
             }

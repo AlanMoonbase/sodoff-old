@@ -1722,13 +1722,11 @@ public class ContentController : Controller {
     [Produces("application/xml")]
     [Route("ContentWebService.asmx/GetUserActivityByUserID")]
     public IActionResult GetUserActivityByUserID([FromForm] Guid userId) {
-        // TODO: This is a placeholder
-
         Viking? viking = ctx.Vikings.FirstOrDefault(e => e.Uid == userId);
 
         if (viking == null) return Ok(new ArrayOfUserActivity { UserActivity = new Schema.UserActivity[0] });
 
-        return Ok(new ArrayOfUserActivity { UserActivity = userActivityService.GetUserActivities(viking) });
+        return Ok(new ArrayOfUserActivity { UserActivity = userActivityService.GetUserActivities(viking).Where(e => e.UserActivityTypeID == 3).ToArray() });
     }
 
     [HttpPost]
@@ -1740,7 +1738,7 @@ public class ContentController : Controller {
 
         if (userActivity != null)
         {
-            userActivityService.SetOrAddUserActivity(userActivity);
+            userActivityService.AddUserActivity(userActivity);
             return Ok(true);
         }
 

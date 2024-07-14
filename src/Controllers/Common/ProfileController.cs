@@ -160,7 +160,7 @@ public class ProfileController : Controller {
             AnswerData = new UserAnswerData { UserID = viking.Uid.ToString(), Answers = profileService.GetUserAnswers(viking) },
             GameCurrency = currency.GameCurrency,
             CashCurrency = currency.CashCurrency,
-            ActivityCount = 0,
+            ActivityCount = viking.UserActivities.Where(e => e.VikingActivityTypeId == 8).Count(),
             BuddyCount = viking.Buddies.Count,
             UserGradeData = new UserGrade { UserGradeID = 0 },
             UserProfileTag = new UserProfileTag()  {
