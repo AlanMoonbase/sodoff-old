@@ -962,6 +962,15 @@ public class ContentController : Controller {
 
     [HttpPost]
     [Produces("application/xml")]
+    [Route("ContentWebService.asmx/GetTracksByUserID")]
+    public TrackInfo[] GetTracksByUserId()
+    {
+        // TODO - placeholder
+        return new TrackInfo[0];
+    }
+
+    [HttpPost]
+    [Produces("application/xml")]
     [Route("V2/ContentWebService.asmx/GetUserUpcomingMissionState")]
     public IActionResult GetUserUpcomingMissionState([FromForm] Guid apiToken, [FromForm] Guid userId, [FromForm] string apiKey) {
         Viking? viking = ctx.Vikings.FirstOrDefault(x => x.Uid == userId);

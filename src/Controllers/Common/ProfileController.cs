@@ -161,7 +161,7 @@ public class ProfileController : Controller {
             GameCurrency = currency.GameCurrency,
             CashCurrency = currency.CashCurrency,
             ActivityCount = viking.UserActivities.Where(e => e.VikingActivityTypeId == 8).Count(),
-            BuddyCount = viking.Buddies.Count,
+            BuddyCount = viking.Buddies.Where(e => e.Status == BuddyStatus.Approved).Count(),
             UserGradeData = new UserGrade { UserGradeID = 0 },
             UserProfileTag = new UserProfileTag()  {
                 CreateDate = new DateTime(DateTime.Now.Ticks),
