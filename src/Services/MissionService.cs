@@ -58,7 +58,7 @@ public class MissionService {
     {
         if(gameVersion <= ClientVersion.WoJS_AdvLand)
         {
-            return XmlUtil.DeserializeXml<MissionData>(File.ReadAllText($".\\Resources\\wojs_adventureland_data\\missions\\{gameId}_{type}.xml"));
+            return XmlUtil.DeserializeXml<MissionData>(File.ReadAllText($"./Resources/wojs_adventureland_data/missions/{gameId}_{type}.xml"));
         }
 
         return new MissionData();
@@ -68,7 +68,7 @@ public class MissionService {
     {
         if (gameVersion <= ClientVersion.WoJS_AdvLand)
         {
-            return XmlUtil.DeserializeXml<Step>(File.ReadAllText($".\\Resources\\wojs_adventureland_data\\steps\\{id}.xml"));
+            return XmlUtil.DeserializeXml<Step>(File.ReadAllText($"./Resources/wojs_adventureland_data/steps/{id}.xml"));
         }
 
         return new Step();
