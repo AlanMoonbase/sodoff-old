@@ -11,3 +11,4 @@ src/mods/
 src/assets-cache/
 src/Properties
 __pycache__/
+/src/Migrations
