@@ -29,10 +29,16 @@ namespace sodoff.Services
                 { "cmd", cmd },
                 { "serializedArgs", serializedArgs }
             });
-
-            var result = httpClient.PostAsync($"http://{config.Value.MMOAdress}:{config.Value.MMOHttpApiPort}/mmo/update/SendPacketToRoom", form)?.Result;
-            if (result != null && result.StatusCode == System.Net.HttpStatusCode.OK) return true;
-            else return false;
+            try
+            {
+                var result = httpClient.PostAsync($"http://{config.Value.MMOAdress}:{config.Value.MMOHttpApiPort}/mmo/update/SendPacketToRoom", form)?.Result;
+                if (result != null && result.StatusCode == System.Net.HttpStatusCode.OK) return true;
+                else return false;
+            } catch (AggregateException ex)
+            {
+                Console.WriteLine("MMO Connection Failiure. Please Investigate - " + ex.Message);
+                return false;
+            }
         }
 
         public bool SendPacketToPlayer(string apiToken, string userId, string cmd, string[] args)
@@ -47,9 +53,17 @@ namespace sodoff.Services
                 { "serializedArgs", argsSerialized }
             });
 
-            var result = httpClient.PostAsync($"http://{config.Value.MMOAdress}:{config.Value.MMOHttpApiPort}/mmo/update/SendPacketToPlayer", form)?.Result;
-            if (result != null && result.StatusCode == System.Net.HttpStatusCode.OK) return true;
-            else return false;
+            try
+            {
+                var result = httpClient.PostAsync($"http://{config.Value.MMOAdress}:{config.Value.MMOHttpApiPort}/mmo/update/SendPacketToPlayer", form)?.Result;
+                if (result != null && result.StatusCode == System.Net.HttpStatusCode.OK) return true;
+                else return false;
+            }
+            catch (AggregateException ex)
+            {
+                Console.WriteLine("MMO Connection Failiure. Please Investigate - " + ex.Message);
+                return false;
+            }
         }
 
         public bool UpdateRoomVarsInRoom<T>(string apiToken, string roomName, Dictionary<string, T> vars)
@@ -63,9 +77,17 @@ namespace sodoff.Services
                 { "serializedVars", varsSerialized }
             });
 
-            var result = httpClient.PostAsync($"http://{config.Value.MMOAdress}:{config.Value.MMOHttpApiPort}/mmo/update/UpdateRoomVarsInRoom", form)?.Result;
-            if (result != null && result.StatusCode == System.Net.HttpStatusCode.OK) return true;
-            else return false;
+            try
+            {
+                var result = httpClient.PostAsync($"http://{config.Value.MMOAdress}:{config.Value.MMOHttpApiPort}/mmo/update/UpdateRoomVarsInRoom", form)?.Result;
+                if (result != null && result.StatusCode == System.Net.HttpStatusCode.OK) return true;
+                else return false;
+            }
+            catch (AggregateException ex)
+            {
+                Console.WriteLine("MMO Connection Failiure. Please Investigate - " + ex.Message);
+                return false;
+            }
         }
     }
 }

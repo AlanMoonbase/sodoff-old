@@ -910,7 +910,7 @@ public class ContentController : Controller {
     [Produces("application/xml")]
     [Route("ContentWebService.asmx/SetImage")]
     [VikingSession]
-    public bool SetImage(Viking viking, [FromForm] string ImageType, [FromForm] int ImageSlot, [FromForm] string contentXML, [FromForm] string imageFile) {
+    public bool SetImage(Viking viking, [FromForm] string ImageType, [FromForm] int ImageSlot, [FromForm] string contentXML, [FromForm] string imageFile, [FromForm] string apiKey) {
         // TODO: the other properties of contentXML
         ImageData data = XmlUtil.DeserializeXml<ImageData>(contentXML);
 
@@ -920,7 +920,7 @@ public class ContentController : Controller {
             image = new Image {
                 ImageType = ImageType,
                 ImageSlot = ImageSlot,
-                Viking = viking,
+                Viking = viking
             };
             newImage = true;
         }
@@ -1816,7 +1816,7 @@ public class ContentController : Controller {
     }
 
     [HttpPost]
-    [Route("ContentWebSerivce.asmx/GetHouse")] // used by World Of Jumpstart
+    [Route("ContentWebService.asmx/GetHouse")] // used by World Of Jumpstart
     [VikingSession]
     public IActionResult GetHouse(Viking viking) {
         string? ret = Util.SavedData.Get(
@@ -2459,10 +2459,11 @@ public class ContentController : Controller {
     [HttpPost]
     [Produces("application/xml")]
     [Route("MissionWebService.asmx/GetMission")]
-    public IActionResult GetMission([FromForm] int gameId, [FromForm] int type, [FromForm] string name, [FromForm] string apiKey)
+    public IActionResult GetMission([FromForm] int gameId, [FromForm] int type, [FromForm] string apiKey)
     {
-        if (gameId == 1 && name == "TrainingIsland") return Ok(missionService.GetMissionDataFromResource(ClientVersion.GetVersion(apiKey), 4));
-        return Ok(new MissionData());
+        MissionData mission = missionService.GetMissionDataFromFile(ClientVersion.GetVersion(apiKey), gameId, type);
+        if (mission != null) return Ok(mission);
+        else return Ok(new MissionData());
     }
 
     [HttpPost]
@@ -2492,6 +2493,38 @@ public class ContentController : Controller {
         }
 
         return Ok(false);
+    }
+
+    [HttpPost]
+    [Produces("application/xml")]
+    [Route("ContentWebService.asmx/SetUserMissionComplete")]
+    [VikingSession]
+    public IActionResult SetUserMissionComplete(Viking viking, [FromForm] int worldId, [FromForm] int missionId, [FromForm] string apiKey)
+    {
+        if (ClientVersion.GetVersion(apiKey) <= ClientVersion.WoJS_AdvLand)
+        {
+            return Ok(missionService.SetUserMissionCompleted(viking, worldId, missionId, true));
+        }
+
+        return Ok(false);
+    }
+
+    [HttpPost]
+    [Produces("application/xml")]
+    [Route("ContentWebService.asmx/SetUserBadgeComplete")]
+    [VikingSession]
+    public IActionResult SetUserBadgeComplete(Viking viking, [FromForm] int badgeId)
+    {
+        return Ok(missionService.SetUserBadgeComplete(viking, badgeId));
+    }
+
+    [HttpPost]
+    [Produces("application/xml")]
+    [Route("ContentWebService.asmx/GetUserBadgeComplete")]
+    [VikingSession]
+    public IActionResult GetUserBadgeComplete(Viking viking)
+    {
+        return Ok(missionService.GetUserBadgesCompleted(viking));
     }
 
     [HttpPost]

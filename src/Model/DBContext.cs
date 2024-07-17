@@ -27,7 +27,8 @@ public class DBContext : DbContext {
     public DbSet<Message> Messages { get; set; } = null!;
     public DbSet<Neighborhood> Neighborhoods { get; set; } = null!;
     // we had a brief debate on whether it's neighborhoods or neighborheed
-    public DbSet<UserMissionData> UserMissionData { get; set; }
+    public DbSet<UserMissionData> UserMissionData { get; set; } = null!;
+    public DbSet<UserBadgeCompleteData> UserBadgesCompleted { get; set; } = null!;
     public DbSet<UserActivity> UserActivities { get; set; } = null!;
 
 
@@ -148,6 +149,9 @@ public class DBContext : DbContext {
             .WithOne(e => e.Viking);
 
         builder.Entity<Viking>().HasMany(v => v.UserMissions)
+            .WithOne(e => e.Viking);
+
+        builder.Entity<Viking>().HasMany(v => v.UserBadgesCompleted)
             .WithOne(e => e.Viking);
 
         builder.Entity<Viking>().HasMany(v => v.UserActivities)
@@ -286,6 +290,11 @@ public class DBContext : DbContext {
         // User Mission Data (for older games and WoJS lands)
         builder.Entity<UserMissionData>().HasOne(r => r.Viking)
             .WithMany(e => e.UserMissions)
+            .HasForeignKey(e => e.VikingId);
+
+        // User Badge Completed Data (for older games and WoJS lands)
+        builder.Entity<UserBadgeCompleteData>().HasOne(r => r.Viking)
+            .WithMany(e => e.UserBadgesCompleted)
             .HasForeignKey(e => e.VikingId);
 
         // User Activity
