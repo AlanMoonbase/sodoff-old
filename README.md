@@ -1,3 +1,7 @@
+# Old Fork
+
+This is an old fork of the sodoff project, please go to https://github.com/AlanMoonbase/sodoff for rewritten code as the additions present in this fork are buggy, unstable, and lack moderation features.
+
 # SoDOff - School of Dragons, Offline
 
 On 7th June 2023, School of Dragons announced they were "sunsetting" the game, and turning the servers off on the 30th of June.
